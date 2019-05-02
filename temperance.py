@@ -2,65 +2,72 @@ import random
 
 # The following variables can be changed:
 NUMBER_AGENTS = 3 # Number of agents to create.
-SHOW_AGENT_INFO = 1 # Show the information of how many agents.
+SHOW_AGENT_INFO = 1 # Show the information of x number of agents. Usually 1 is already a lot of information.
 AGENT_VISION = 2 # The range of vision of the agent; it can see x by x squares around itself.
-AGENT_HEALTH = 10 # The starting health of agents
+AGENT_HEALTH = 10 # The starting health of agents.
 AGENT_METABOLISM = .5 # Amount of health the agent loses every turn.
 AGENT_SOCIALIZATION = .2 # The increase of socialization after every "interaction."
-NUMBER_FOOD = 5 # Number of food to create.
-SIM_AREA = 5 # Area for randomly generating agents and food. Creates an x by x square.
-FOOD_REGROWTH = 3 # X number of turns before food regrows at a particular spot.
+# "Interaction" here is simply when the agent consumes food in the presence of other agents.
+NUMBER_FOOD = 5 # Number of food patches to create.
+SIM_AREA = 5 # Area for randomly generating agents and food. Creates an x by x grid square.
+FOOD_REGROWTH = 3 # X number of turns before food regrows at a food patch.
 
-# The rules or proposition that agents in the simulation can learn:
+# For reference, the rules that agents in the simulation can learn:
 rule1Text = "Consuming 1 food is good for me."
 rule2Text = "Consuming 2 food is very good for me."
 rule3Text = "Consuming 2 food is bad for the community."
 rule4Text = "Consuming 3 food is bad for me."
 rule5Text = "Consuming 3 food is bad for the community."
  
+# The agent class:
 class agent:
+    # Initialization of the agent class:
     def __init__(self, id, x, y):
         self.id = id # An identification number for the agent.
         self.xPosition = x # The position of the agent on the map.
         self.yPosition = y
         self.health = AGENT_HEALTH # The health of the agent. When it reaches 0 then the agent dies.
-        self.rules = {"rule1": False, "rule1weight": 0, # The rules known by the agent with their corresponding weights.
+        # The rules known by the agent along with their corresponding weights.
+        self.rules = {"rule1": False, "rule1weight": 0,
                       "rule2": False, "rule2weight": 0,
                       "rule3": False, "rule3weight": 0,
                       "rule4": False, "rule4weight": 0,
                       "rule5": False, "rule5weight": 0}
-        self.timesSick3 = 0 # Times the agent became sick for eating excessively, i.e. 3 sugar.
+        self.timesSick3 = 0 # Times the agent became sick from eating 3 units of sugar.
         self.timesPunished2 = 0 # Times the agent was punished by others for eating 2 sugar.
         self.timesPunished3 = 0 # Times the agent was punished by others for eating 3 sugar.
         self.socialization = 0 # Times the agent has "interacted" with other agents. 
 
         self.seeing = [] # The list of food seen by the agent. 
-        self.seeingScores = [] # The scores to see the decision prcesses.
+        self.seeingScores = [] # The decision-making scores for everything seen.
         self.pursuing = []  # The food currently pursued.
-        self.consuming = [] # The food currently consuming.
-        self.punished = False # If punished for consuming the food.
+        self.consuming = [] # The food currently consumed.
+        self.punished = False # A marker to indicate if agent is punished for consuming food.
 
+# The food class:
 class food:
+    # Initialization of the food class:
     def __init__(self, id, x, y, amount):
         self.id = id # An identification number for the food.
         self.xPosition = x # The position of the food on the map.
         self.yPosition = y
         self.amount = amount # The amount of food, from 1 to 3 units.
-        self.consumed = False # Whether the food has been consumed. It will regrow later.
-        self.regrowthTimer = FOOD_REGROWTH # A timer to determine when the food regrows after it is consumed.
+        self.consumed = False # Whether the food has been consumed in the food patch. 
+                              # If true, it will regrow later.
+        self.regrowthTimer = FOOD_REGROWTH # A timer to determine when the food will regrow.
 
 
-#############################################################################################
-## Decision Procedure - The crucial function for the agents that uses a simple PECS model  ##
-#############################################################################################
+##################################################################################################
+## Decision-Making Process - The key function for the agents that uses a simple PECS framework  ##
+##################################################################################################
 def decision(agent, food):
-    # The set of scores for deciding whether to pursue or avoid food.
+    # The set of scores which determines whether the agent will pursue or avoid the food.
     physicalScore = 0
     emotionalScore = 0
     cognitiveScore = 0
     socialScore = 0
     
-    # Physical Component - This component's score is based on survival instinct.
+    # Physical Component - This component's score is based on the agent's hunger.
     # The less the agent's health is, the stronger its craving for food.
     if (agent.health >= 10): # 10 health and above means that the agent is satisfied.
         physicalScore = 0
@@ -72,19 +79,19 @@ def decision(agent, food):
         physicalScore = 3
 
     # Emotional Component - This component's score is based on an appraisal theory
-    # of emotions. The more the food is, the better it seems and the stronger the
-    # emotion of desire is. However, previous negative experiences may counteract this.
+    # of emotions. The greater the amount of food is, the better it seems and the stronger
+    # the emotion of desire is. However, previous negative experiences may counteract this.
     if (food.amount == 1):
         emotionalScore = 1
     elif (food.amount == 2):
         emotionalScore = 2
     elif (food.amount == 3):
         emotionalScore = 3 - agent.timesSick3  
-        # Though 3 units of food initially seems to be most attractive, the emotional 
-        # desire decreases the more times it makes the agent sick.
+        # Though 3 units of food is initially the most attractive, the emotional 
+        # desire decreases the more times 3 units of food makes the agent sick.
 
     # Cognitive Component - This component's score is based on the rules that the agent
-    # knows and how "experienced" it is.
+    # has learned through experience. Each rule has a corresponding weight.
     if (food.amount == 1 and agent.rules["rule1"]):
         cognitiveScore = agent.rules["rule1weight"]
     if (food.amount == 2 and agent.rules["rule2"]):
@@ -96,7 +103,10 @@ def decision(agent, food):
     if (food.amount == 3 and agent.rules["rule5"]):
         cognitiveScore -= agent.rules ["rule5weight"]
 
-    # Social Component
+    # Social Component - This component's score is based on social approbation and punishment
+    # multiplied by a "socialization" value. 1 unit of food results in a mild social approbation
+    # while 2 and 3 units of food lead to social punishment. Socialization can represent the
+    # amount of social pressure the agent feels, given all its "interactions" with other agents.
     if (food.amount == 1):
         socialScore = 1
     if (food.amount == 2):
@@ -108,9 +118,9 @@ def decision(agent, food):
 
     # Decision Score
     decisionScore = physicalScore + emotionalScore + cognitiveScore + socialScore
-    decisionScore = round(decisionScore, 1)
+    decisionScore = round(decisionScore, 1) # To avoid trailing zeroes.
 
-    # Return the scores
+    # This function returns all the scores.
     return physicalScore, emotionalScore, cognitiveScore, socialScore, decisionScore
 
 ################################################################
@@ -118,7 +128,7 @@ def decision(agent, food):
 ## It can be replaced with a different graphics function      ##  
 ################################################################
 def draw(agentList, foodList):
-    # Draw the world with agents and food
+    # Draw the grid world with agents and food.
     print("  ", end=" ")
     for x in range(SIM_AREA):
         print(x,"]", sep="", end=" ")
@@ -128,29 +138,31 @@ def draw(agentList, foodList):
         for x in range(SIM_AREA):
             agentPresent = False
             foodPresent = False
-            # If an agent is present in the coordinate, then display A
+            # If an agent is present in the coordinate, then display "A" + agent id number.
             for a in agentList:
                 if (a.xPosition == x and a.yPosition == y):
                     print("A",a.id, sep="", end=" ")
                     agentPresent = True
-            # If no agent is present, but there is food, display the food amount.
+            # If no agent is present in the coordinate, but there is food, display the food 
+            # amount + "F".
             if (agentPresent == False):
                 for f in foodList:
                     if (f.xPosition == x and f.yPosition == y and f.consumed == False):
                         print(f.amount,"F", sep="", end=" ")
                         foodPresent = True
-            # Otherwise, it is an empty coordinate, represented by *
+            # Otherwise, if it is an empty coordinate, diplay "**".
             if (agentPresent == False and foodPresent == False):            
                 print("**", end=" ")
         print("\n")
 
-    # Just a way to limit the number of agent information shown.
+    # Code that limits the number of agent information shown according to SHOW_AGENT_INFO.
     newList = []
     for i in range(SHOW_AGENT_INFO):
         newList.append(agentList[i])
-    # Print information of agents.
+    # Print the information of agents.
     for a in newList:
-        # First line
+        # First line - Agent id, health, whether the agent is pursuing or consuming food,
+        # and whether the agent has gotten sick or is punished by others.
         print("Agent ",a.id," at ",a.xPosition,",",a.yPosition,".", sep="", end=" ")
         print("Health: ",a.health,".", sep="", end=" ")
         if a.pursuing:
@@ -161,28 +173,31 @@ def draw(agentList, foodList):
             if (a.punished == True): print("Punished by others!")
             else: print("")
         else: print("")
-        # Second line
+        # Second line - The rules that the agent knows with corresponding weights.
         print("Knowledge: Rule1:", a.rules["rule1weight"], "|| Rule2:", a.rules["rule2weight"], "|| Rule3:", a.rules["rule3weight"], "|| Rule4:", a.rules["rule4weight"], "|| Rule5:", a.rules["rule5weight"])
-        # Third line
+        # Third line - The agent's socialization value, number of times punished for 2 and 3
+        # units of food, the number of times the agent has gotten sick from 3 units of food.
         print("Socialization:",a.socialization,"|| Times punished for 2:", a.timesPunished2, "|| Times punished for 3:", a.timesPunished3, "|| Times sick 3:",a.timesSick3)
-        # Fourth and following lines
+        # Fourth line onward - The list of food that the agent is currently seeing along with
+        # the scores from agent's decision-making process.
         if a.seeing:
             for i in range(len(a.seeing)):
                 print("Seeing food at (",a.seeing[i].xPosition,",",a.seeing[i].yPosition,") with amount ",a.seeing[i].amount,". Decision: P:",a.seeingScores[i][0], " E:",a.seeingScores[i][1], " C:",a.seeingScores[i][2], " S:",a.seeingScores[i][3], " Total Score:", a.seeingScores[i][4], ".",  sep="")   
 
 
-
 #########################
-## This main function  ##
+## The main function  ##
 #########################
 def main():
+    # The agents and food are in their corresponding lists.
     agentList = []
     foodList = []
 
+    # Create agents and place them in the grid world.
     for a in range(NUMBER_AGENTS):
-        #Create a new agent
+        #Create a new agent.
         newAgent = agent(a, random.randint(0, SIM_AREA-1), random.randint(0,SIM_AREA-1))
-        # Check if this agent is on the same space as another agent. If yes, then create again.
+        # Check if this agent is on the same place as another agent. If yes, then create again.
         # Otherwise, append the agent to the agent list.
         duplicate = True
         while duplicate:
@@ -193,11 +208,12 @@ def main():
                 duplicate = False
                 agentList.append(newAgent)
 
+    # Create food and place them in the grid world.
     for f in range(NUMBER_FOOD):
-        #Create a new food patch with food
+        #Create a new food patch with food.
         newFood = food(f, random.randint(0, SIM_AREA-1), random.randint(0,SIM_AREA-1), random.randint(1,3))
-        # Check if this food is on the same space as another food. If yes, then create again.
-        # Otherwise, append the food to the food list.
+        # Check if this food patch is on the same place as another food patch. If yes, then create again.
+        # Otherwise, append the food patch with food to the food list.
         duplicate = True
         while duplicate:
             if any (f2.xPosition == newFood.xPosition and f2.yPosition == newFood.yPosition for f2 in foodList):
@@ -207,17 +223,18 @@ def main():
                 duplicate = False
                 foodList.append(newFood)
 
-    # Draw the original state of the world.
+    # Draw the first state of the grid world along with agent information.
     draw(agentList,foodList)
 
+    # Press Enter to continue.
     key = input("Press Enter to move, or \"q\" to quit.")
-    # If user types "q" or "Q" then quit.
+    # If user types "q", then quit.
     if (key == "q"): quit()
     
     # The main program loop
     while True:
 
-        # Regrow any missing food according to regrowth rate
+        # Regrow food in food patches according to regrowth rate.
         for f in foodList:
             if f.consumed:
                 f.regrowthTimer -= 1
@@ -225,10 +242,11 @@ def main():
                     f.regrowthTimer = FOOD_REGROWTH
                     f.consumed = False
 
-        # Do move, search, decision, consume, and metabolize procedures
+        # The agents Move, Search, Decide, Consume, and Metabolize.
         for a in agentList:      
 
-            # Move function - if agent is pursuing a food patch, then move closer, otherwise move randomly
+            # Move - If the agent is pursuing food, then move closer to the food patch. 
+            # Otherwise, move randomly.
             while True:
                 if a.pursuing: 
                     if (a.xPosition > a.pursuing.xPosition): tempx = a.xPosition - 1
@@ -248,56 +266,62 @@ def main():
                 if tempx == SIM_AREA: tempx = SIM_AREA - 1
                 if tempy == -1: tempy = 0
                 if tempy == SIM_AREA: tempy = SIM_AREA - 1
-                # To keep things simpler, no two agents can occupy the same space.
+                # To keep things simpler, no two agents can occupy the same place.
                 if any (a2.xPosition == tempx and a2.yPosition == tempy for a2 in agentList):
-                    # If pursuing and it is already on the pursued food patch, or if it is consuming food,
-                    # or if it is blocked, then don't move.
+                    # If there is another agent blocking the way to the pursued food, 
+                    # or if the agent is already at the pursued food patch and will consume it,
+                    # then the agent won't move. 
                     if a.pursuing or a.consuming: 
                         break
                     else: continue
                 else:
-                    # If everything is ok, give agent new position.
+                    # If everything is good, then give the agent the new coordinate position.
                     a.xPosition = tempx
                     a.yPosition = tempy
                     break
             
-            # Search - The agent looks around at its surroundings for food
+            # Search - The agent looks around for food.
             seeingList = []
             for x in range(a.xPosition-AGENT_VISION, a.xPosition+AGENT_VISION+1):
                 for y in range(a.yPosition-AGENT_VISION, a.yPosition+AGENT_VISION+1):
                     for f in foodList:
                         if (f.xPosition == x and f.yPosition == y and f.consumed == False):
                             seeingList.append(f)
+            # Randomly shuffles the list of food seen, so it doesn't always pursue the food
+            # near the top left corner of its vision.
             random.shuffle(seeingList)
             a.seeing = seeingList
 
-            # Decide on everything seen
+            # Decide - The agent uses a decision-making process on all the food it sees.
             a.seeingScores = []
             for i in range(len(a.seeing)):
                 a.seeingScores.append(decision(a, a.seeing[i]))
-
-            # If not already pursuing, pursue the first positive
+            # If it is not currently pursuing food, then it pursues one of the "pursuable" foods
+            # that it sees. "Pursuable" is based on the decision-making process. The decision score
+            # should be greater than 0.
             if not a.pursuing:
-                a.consuming = [] # Just removes the indicator for the last consumed food. See below.
-                a.punished = False # Just removes the indicator for the last punishment, if any.
+                a.consuming = [] # Just removes the agent's last consumed food.
+                a.punished = False # Just removes the agent's punishment marker, if any.
+                # Find one food to pursue.
                 for i in range(len(a.seeing)):
                     if (a.seeingScores[i][4] > 0):
                         a.pursuing = a.seeing[i]
                         break
 
-            # If pursuing and on top of it already, then consume, update PECS
+            # Consume - If the agent is pursuing food and is on top of it, then the agent 
+            # consumes the food and updates its PECS framework accordingly.
             if (a.pursuing and a.xPosition == a.pursuing.xPosition and a.yPosition == a.pursuing.yPosition):
                 for f in foodList:
                     if (f.xPosition == a.xPosition and f.yPosition == a.yPosition):
-                        # Consume proper
+                        # The agent consumes the food.
                         f.consumed = True
                         a.consuming = a.pursuing
-                        # Physical component update
+                        # Physical component update.
                         if (f.amount == 1 or f.amount == 2): a.health += f.amount
-                        elif (f.amount == 3): a.health -= 1
-                        # Emotional component update
+                        elif (f.amount == 3): a.health -= 1 # Agent gets sick.
+                        # Emotional component update.
                         if (f.amount == 3): a.timesSick3 += 1
-                        # Cognitive component update
+                        # Cognitive component update.
                         if (f.amount == 1): 
                             a.rules["rule1"] = True
                             a.rules["rule1weight"] += 1
@@ -307,7 +331,7 @@ def main():
                         elif (f.amount == 3):
                             a.rules["rule4"] = True
                             a.rules["rule4weight"] += 1
-                        # Social component update
+                        # Social component update.
                         tempAgentList = agentList.copy()
                         tempAgentList.remove(a)
                         if any (abs(ta.xPosition - a.xPosition) <= AGENT_VISION and abs(ta.yPosition - a.yPosition) <= AGENT_VISION for ta in tempAgentList):
@@ -323,27 +347,30 @@ def main():
                                 a.punished = True
                                 a.rules["rule5"] = True
                                 a.rules["rule5weight"] += 1
-                        # All agents stop pursuing this consumed food.
+                        # All other agents should stop pursuing this food because it has
+                        # been consumed.
                         for a2 in agentList:
                             if a2.pursuing:
                                 if (a2.pursuing.xPosition == f.xPosition and a2.pursuing.yPosition == f.yPosition):
                                     a2.pursuing = []
 
-            # Metabolize (and possibly die)
+            # Metabolize - The agent loses health according to AGENT_METABOLISM. If its 
+            # health is 0 or less then it dies.
             a.health -= AGENT_METABOLISM
             a.health = round(a.health, 1)
             if (a.health <= 0):
                 agentList.remove(a)
 
-        # Draw the new state of the world.
+        # Draw the new state of the gird world along with agent information.
         draw(agentList,foodList)
 
+        # Press Enter to continue.
         key = input("Press Enter to move, or \"q\" to quit.")
-        # If user types "q" or "Q" then quit.
+        # If user types "q", then quit.
         if (key == "q"):
             break
         else:
             continue
     
-
+    
 main()
