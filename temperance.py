@@ -399,7 +399,6 @@ def main():
             # METABOLIZE - The agent loses health according to AGENT_METABOLISM. 
             # If its health is 0 or less, it dies.
             a.health -= AGENT_METABOLISM
-            a.health = round(a.health, 1) # Round to 1 decimal point. Just to avoid trailing zeroes.
             if (a.health <= 0):
                 agentList.remove(a)
 
