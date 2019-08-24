@@ -167,13 +167,15 @@ def draw(agentList, foodList):
         print("\n")
     print("y\n")    
 
-
     # You can display the information for x number of agents, set through the constant variable SHOW_AGENT_INFO above.
     # This piece of code gets the list of agents whose information will be displayed in the information panel.
     newList = []
-    for i in range(SHOW_AGENT_INFO):
+    if len(agentList) < SHOW_AGENT_INFO: # This is in case some agents have died. Then you might have a list that is
+        showAgents = len(agentList)      # even shorter than SHOW_AGENT_INFO 
+    else:
+        showAgents = SHOW_AGENT_INFO
+    for i in range(showAgents):
         newList.append(agentList[i])
-             
         
     # The information panel for agents.
     print("INFORMATION PANEL:\n")
