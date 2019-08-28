@@ -300,10 +300,23 @@ def main():
                 if tempx == SIM_AREA: tempx = SIM_AREA - 1
                 if tempy == -1: tempy = 0
                 if tempy == SIM_AREA: tempy = SIM_AREA - 1
+                  
                 # To keep things simple, a rule is that no two agents can occupy the same place.
-                # In case another agent is blocking the agent's prospective path, the agent will stay in place.
+                # In case another agent is blocking the agent's prospective path, the agent will move to random
+                # empty space.
                 if any (a2.xPosition == tempx and a2.yPosition == tempy for a2 in agentList): 
-                    break # If the loop breaks then the agent's position will not change.
+                    while any (a2.xPosition == tempx and a2.yPosition == tempy for a2 in agentList):
+                        tempx = a.xPosition + random.randint(-1, 1)
+                        tempy = a.yPosition + random.randint(-1, 1)   
+                    # Again a check for going off the edge.
+                    if tempx == -1: tempx = 0
+                    if tempx == SIM_AREA: tempx = SIM_AREA - 1
+                    if tempy == -1: tempy = 0
+                    if tempy == SIM_AREA: tempy = SIM_AREA - 1
+                    # Change the position.
+                    a.xPosition = tempx
+                    a.yPosition = tempy
+                    break
                 else:
                     # If everything is good, then the agent will move to the prospective coordinate position.
                     a.xPosition = tempx
