@@ -262,7 +262,7 @@ def main():
         for f in foodList:
             if f.consumed:
                 f.regrowthTimer -= 1
-                if (f.regrowthTimer == 0):
+                if (f.regrowthTimer <= 0):
                     f.regrowthTimer = FOOD_REGROWTH
                     f.consumed = False
 
@@ -399,6 +399,7 @@ def main():
             # METABOLIZE - The agent loses health according to AGENT_METABOLISM. 
             # If its health is 0 or less, it dies.
             a.health -= AGENT_METABOLISM
+            a.health = round(a.health, 1) # Just to avoid trailing zeroes.
             if (a.health <= 0):
                 agentList.remove(a)
 
