@@ -5,13 +5,13 @@ NUMBER_AGENTS = 3 # Number of agents to create.
 SHOW_AGENT_INFO = 3 # Show the information of x number of agents. Usually 1 is already a lot of information.
 AGENT_VISION = 2 # The range of vision of the agent; it can see x by x squares around itself.
 AGENT_HEALTH = 10 # The starting health of agents.
-AGENT_METABOLISM = .5 # Amount of health the agent loses every turn.
+AGENT_METABOLISM = .2 # Amount of health the agent loses every turn.
 AGENT_SOCIALPRESSURE = .2 # Social pressure increases the more the agent interacts with other agents. "Interaction" 
                           # in this case simply means eating food in the presence of other agents (i.e. while being
                           # inside the range of vision of other agents.) 
-NUMBER_FOOD = 5 # Number of food patches to create.
+NUMBER_FOOD = 6 # Number of food patches to create.
 SIM_AREA = 5 # Area for the grid world. Creates an x by x grid square.
-FOOD_REGROWTH = 3 # X number of turns before food regrows at a food patch.
+FOOD_REGROWTH = 1 # X number of turns before food regrows at a food patch.
 
 # For reference, the five cognitive rules that agents in the simulation can learn:
 rule1Text = "Consuming 1 food is good for me."
