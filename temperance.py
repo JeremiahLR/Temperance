@@ -2,7 +2,7 @@ import random # To be able to obtain random numbers in the simulation.
 
 # The following variables can be changed:
 NUMBER_AGENTS = 3 # Number of agents to create.
-SHOW_AGENT_INFO = 3 # Show the information of x number of agents. Usually 1 is already a lot of information.
+SHOW_AGENT_INFO = 3 # Show the information of x number of agents. 
 AGENT_VISION = 2 # The range of vision of the agent; it can see x by x squares around itself.
 AGENT_HEALTH = 10 # The starting health of agents.
 AGENT_METABOLISM = .2 # Amount of health the agent loses every turn.
